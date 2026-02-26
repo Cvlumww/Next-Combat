@@ -259,7 +259,7 @@ export default function DMInitiativeTrackerPage() {
     trackEvent("dm_end_combat_confirm");
   }
 
-  function handleInlineHpChange(actorId, value) {
+  function handleInlineHpChange(actorId, actorName, value) {
     const hp = Math.max(0, Number(value) || 0);
     setActors((prev) =>
       prev.map((actor) =>
@@ -267,7 +267,7 @@ export default function DMInitiativeTrackerPage() {
       ),
     );
     // eslint-disable-next-line no-console
-    console.log("NPC HP updated", { actorId, hp });
+    console.log("NPC HP updated", { actorId, name: actorName, hp });
     trackEvent("dm_update_hp_inline");
   }
 
@@ -495,7 +495,11 @@ export default function DMInitiativeTrackerPage() {
                           className={styles.hpInput}
                           value={actor.hp}
                           onChange={(e) =>
-                            handleInlineHpChange(actor.id, e.target.value)
+                            handleInlineHpChange(
+                              actor.id,
+                              actor.name,
+                              e.target.value,
+                            )
                           }
                         />
                       )}
@@ -725,9 +729,19 @@ export default function DMInitiativeTrackerPage() {
 
       {showConfetti && (
         <div className={styles.confettiOverlay}>
-          {Array.from({ length: 30 }).map((_, i) => (
-            <div key={i} className={styles.confettiPiece} />
-          ))}
+          {Array.from({ length: 30 }).map((_, i) => {
+            const angle = (2 * Math.PI * i) / 30;
+            const distance = 360;
+            const dx = Math.cos(angle) * distance;
+            const dy = Math.sin(angle) * distance;
+            return (
+              <div
+                key={i}
+                className={styles.confettiPiece}
+                style={{ "--dx": `${dx}px`, "--dy": `${dy}px` }}
+              />
+            );
+          })}
         </div>
       )}
 

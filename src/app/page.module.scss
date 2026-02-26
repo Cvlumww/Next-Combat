@@ -132,7 +132,7 @@
 
 .panel {
   width: 100%;
-  max-width: 520px;
+  // max-width: 520px;
   border-radius: 16px;
   border: 1px solid var(--button-secondary-border);
   padding: 16px;
@@ -170,7 +170,7 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 6px 10px;
+  padding: 10px 10px;
   border-radius: 12px;
 }
 
@@ -185,8 +185,8 @@
 .actorRowNpc {
   background: linear-gradient(
     90deg,
-    rgba(75, 85, 99, 0.65),
-    rgba(15, 23, 42, 0.9)
+    rgba(99, 75, 75, 0.65),
+    rgba(42, 15, 15, 0.9)
   );
 }
 
@@ -217,45 +217,49 @@
   font-weight: 600;
   color: var(--text-primary);
   margin-bottom: 4px;
+  margin-top: 8px;
 }
 
 .confettiOverlay {
   pointer-events: none;
   position: fixed;
   inset: 0;
-  display: flex;
-  justify-content: center;
-  align-items: flex-start;
   overflow: hidden;
 }
 
 .confettiPiece {
-  width: 6px;
-  height: 10px;
-  margin: 0 4px;
-  border-radius: 2px;
-  animation: confetti-fall 900ms ease-out forwards;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 7px;
+  height: 12px;
+  border-radius: 3px;
+  animation: confetti-burst 900ms ease-out forwards;
 }
 
 .confettiPiece:nth-child(3n) {
-  background: var(--accent);
+  background: #6ee7b7; // pastel green
 }
 
 .confettiPiece:nth-child(3n + 1) {
-  background: #facc15;
+  background: #34d399; // darker green
 }
 
 .confettiPiece:nth-child(3n + 2) {
-  background: #ef4444;
+  background: #22c5b9; // green-teal
 }
 
-@keyframes confetti-fall {
+@keyframes confetti-burst {
   0% {
-    transform: translateY(-20px) rotateZ(0deg);
+    transform: translate(-50%, -50%) scale(0.4) rotate(0deg);
     opacity: 1;
   }
   100% {
-    transform: translateY(140px) rotateZ(300deg);
+    transform: translate(
+        calc(-50% + var(--dx, 0px)),
+        calc(-50% + var(--dy, 0px))
+      )
+      scale(1);
     opacity: 0;
   }
 }
