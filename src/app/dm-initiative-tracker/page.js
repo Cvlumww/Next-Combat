@@ -71,7 +71,10 @@ export default function DMInitiativeTrackerPage() {
 
   const [editingActorId, setEditingActorId] = useState(null);
   const [editInitiative, setEditInitiative] = useState(0);
+  const [editAc, setEditAc] = useState(10);
   const [editHp, setEditHp] = useState(1);
+
+  const [hpChangeAmount, setHpChangeAmount] = useState(1);
 
   const [conditionsActorId, setConditionsActorId] = useState(null);
   const [tempConditions, setTempConditions] = useState([]);
@@ -137,12 +140,13 @@ export default function DMInitiativeTrackerPage() {
     if (!playerName.trim()) return;
 
     const initiative = Math.max(MIN_INITIATIVE, Number(playerInitiative) || 0);
+    const ac = Math.max(0, Number(playerAc) ?? 0);
     const newActor = {
       id: `player-${nextId++}`,
       type: "player",
       name: playerName.trim(),
       initiative,
-      ac: playerAc,
+      ac,
       conditions: [],
       exhaustion: 0,
     };
@@ -163,6 +167,7 @@ export default function DMInitiativeTrackerPage() {
 
     setPlayerName("");
     setPlayerInitiative(0);
+    setPlayerAc(0);
     setShowPlayerModal(false);
     trackEvent("dm_add_player");
   }
@@ -313,21 +318,39 @@ export default function DMInitiativeTrackerPage() {
     trackEvent("dm_remove_actor");
   }
 
-  function handleInlineHpChange(actorId, actorName, value) {
-    const hp = Math.max(0, Number(value) || 0);
+  function handleNpcHeal(actorId, amount) {
+    const delta = Math.max(0, Number(amount) || 0);
     setActors((prev) =>
       prev.map((actor) =>
-        actor.id === actorId && actor.type === "npc" ? { ...actor, hp } : actor,
+        actor.id === actorId && actor.type === "npc"
+          ? { ...actor, hp: (actor.hp ?? 0) + delta }
+          : actor,
       ),
     );
-    // eslint-disable-next-line no-console
-    console.log("NPC HP updated", { actorId, name: actorName, hp });
-    trackEvent("dm_update_hp_inline");
+    trackEvent("dm_npc_heal");
+    setHpChangeAmount(0);
+  }
+
+  function handleNpcDamage(actorId, amount) {
+    const delta = Math.max(0, Number(amount) || 0);
+    setActors((prev) =>
+      prev.map((actor) =>
+        actor.id === actorId && actor.type === "npc"
+          ? {
+              ...actor,
+              hp: Math.max(0, (actor.hp ?? 0) - delta),
+            }
+          : actor,
+      ),
+    );
+    trackEvent("dm_npc_damage");
+    setHpChangeAmount(0);
   }
 
   function openEditModal(actor) {
     setEditingActorId(actor.id);
     setEditInitiative(actor.initiative);
+    setEditAc(typeof actor.ac === "number" ? actor.ac : 10);
     setEditHp(typeof actor.hp === "number" ? actor.hp : 1);
     trackEvent("dm_open_edit_actor");
   }
@@ -341,15 +364,16 @@ export default function DMInitiativeTrackerPage() {
     if (!editingActorId) return;
 
     const initiative = Math.max(MIN_INITIATIVE, Number(editInitiative) || 0);
+    const ac = Math.max(0, Number(editAc) ?? 0);
     const hp = Math.max(1, Number(editHp) || 1);
 
     setActors((prev) =>
       prev.map((actor) => {
         if (actor.id !== editingActorId) return actor;
         if (actor.type === "npc") {
-          return { ...actor, initiative, hp };
+          return { ...actor, initiative, ac, hp };
         }
-        return { ...actor, initiative };
+        return { ...actor, initiative, ac };
       }),
     );
 
@@ -542,27 +566,49 @@ export default function DMInitiativeTrackerPage() {
                       </span>
                     </div>
                     <div className={styles.actorControls}>
-                      {actor.type === "npc" && typeof actor.hp === "number" && (
-                        <input
-                          type="number"
-                          min={0}
-                          className={styles.hpInput}
-                          value={actor.hp}
-                          onChange={(e) =>
-                            handleInlineHpChange(
-                              actor.id,
-                              actor.name,
-                              e.target.value,
-                            )
-                          }
-                        />
+                      {actor.type === "npc" && typeof actor.hp === "number" ? (
+                        <div className={styles.hpControlGroup}>
+                          <span className={styles.hpValue}>HP: {actor.hp}</span>
+                          <input
+                            type="number"
+                            min={0}
+                            className={styles.hpChangeInput}
+                            value={hpChangeAmount}
+                            onChange={(e) =>
+                              setHpChangeAmount(
+                                Math.max(0, Number(e.target.value) || 0),
+                              )
+                            }
+                            aria-label="HP change amount"
+                          />
+                          <button
+                            type="button"
+                            onClick={() =>
+                              handleNpcHeal(actor.id, hpChangeAmount)
+                            }
+                            className={styles.hpHealButton}
+                          >
+                            Heal
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() =>
+                              handleNpcDamage(actor.id, hpChangeAmount)
+                            }
+                            className={styles.hpDamageButton}
+                          >
+                            Damage
+                          </button>
+                        </div>
+                      ) : (
+                        <span className={styles.columnHeaderSpacer} />
                       )}
                       <span className={styles.initiativeValue}>
                         {actor.initiative >= 0 ? "+" : ""}
                         {actor.initiative}
                       </span>
 
-                      <span className={styles.initiativeValue}>
+                      <span className={styles.acValue}>
                         {typeof actor.ac === "number" ? actor.ac : "—"}
                       </span>
 
@@ -744,6 +790,16 @@ export default function DMInitiativeTrackerPage() {
                 value={editInitiative}
                 onChange={(e) => setEditInitiative(e.target.value)}
                 min={MIN_INITIATIVE}
+                className={styles.numberInput}
+              />
+            </label>
+            <label className={styles.formField}>
+              <span>AC</span>
+              <input
+                type="number"
+                value={editAc}
+                onChange={(e) => setEditAc(e.target.value)}
+                min={0}
                 className={styles.numberInput}
               />
             </label>

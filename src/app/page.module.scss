@@ -157,6 +157,28 @@
   color: var(--text-secondary);
 }
 
+.panelColumnHeaders {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 4px 10px 8px;
+  margin-bottom: 4px;
+}
+
+.columnHeaderSpacer {
+  width: 180px;
+  min-width: 180px;
+  flex-shrink: 0;
+}
+
+.columnHeaderLabel {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-secondary);
+}
+
 .actorList {
   list-style: none;
   padding: 0;
@@ -264,8 +286,22 @@
   }
 }
 
-.hpInput {
-  width: 70px;
+.hpControlGroup {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 180px;
+}
+
+.hpValue {
+  font-size: 14px;
+  font-weight: 600;
+  min-width: 28px;
+  color: var(--text-primary);
+}
+
+.hpChangeInput {
+  width: 44px;
   padding: 4px 6px;
   border-radius: 6px;
   border: 1px solid #4b5563;
@@ -274,9 +310,52 @@
   font-size: 12px;
 }
 
-.initiativeValue {
+.hpHealButton {
+  padding: 4px 8px;
+  font-size: 11px;
+  font-weight: 500;
+  border-radius: 6px;
+  border: 1px solid #166534;
+  background: transparent;
+  color: #22c55e;
+  cursor: pointer;
+
+  &:hover {
+    background: rgba(34, 197, 94, 0.15);
+  }
+}
+
+.hpDamageButton {
+  padding: 4px 8px;
+  font-size: 11px;
+  font-weight: 500;
+  border-radius: 6px;
+  border: 1px solid var(--button-secondary-border);
+  background: transparent;
+  color: var(--text-primary);
+  cursor: pointer;
+
+  &:hover {
+    background: var(--button-secondary-hover);
+  }
+}
+
+.initiativeValue,
+.acValue {
   font-size: 14px;
   font-weight: 600;
+}
+
+.acValue {
+  background-image: url("/shield.svg");
+  background-size: contain;
+  background-position: center;
+  background-repeat: no-repeat;
+  width: 30px;
+  height: 30px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
 
 .chipButton {
