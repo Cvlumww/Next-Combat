@@ -51,9 +51,11 @@ export default function DMInitiativeTrackerPage() {
 
   const [playerName, setPlayerName] = useState("");
   const [playerInitiative, setPlayerInitiative] = useState(0);
+  const [playerAc, setPlayerAc] = useState(0);
 
   const [npcName, setNpcName] = useState("");
   const [npcInitiative, setNpcInitiative] = useState(0);
+  const [npcAc, setNpcAc] = useState(10);
   const [npcHp, setNpcHp] = useState(1);
   const [npcMultiples, setNpcMultiples] = useState(false);
   const [npcCount, setNpcCount] = useState(2);
@@ -64,6 +66,7 @@ export default function DMInitiativeTrackerPage() {
 
   const [showAddOptions, setShowAddOptions] = useState(false);
   const [showEndConfirm, setShowEndConfirm] = useState(false);
+  const [removeConfirmActorId, setRemoveConfirmActorId] = useState(null);
   const [showConfetti, setShowConfetti] = useState(false);
 
   const [editingActorId, setEditingActorId] = useState(null);
@@ -134,18 +137,29 @@ export default function DMInitiativeTrackerPage() {
     if (!playerName.trim()) return;
 
     const initiative = Math.max(MIN_INITIATIVE, Number(playerInitiative) || 0);
+    const newActor = {
+      id: `player-${nextId++}`,
+      type: "player",
+      name: playerName.trim(),
+      initiative,
+      ac: playerAc,
+      conditions: [],
+      exhaustion: 0,
+    };
 
-    setActors((prev) => [
-      ...prev,
-      {
-        id: `player-${nextId++}`,
-        type: "player",
-        name: playerName.trim(),
-        initiative,
-        conditions: [],
-        exhaustion: 0,
-      },
-    ]);
+    if (hasStarted) {
+      const currentId = actors[activeIndex]?.id;
+      const newList = [...actors, newActor].sort(
+        (a, b) => b.initiative - a.initiative,
+      );
+      setActors(newList);
+      if (currentId) {
+        const newIndex = newList.findIndex((a) => a.id === currentId);
+        if (newIndex >= 0) setActiveIndex(newIndex);
+      }
+    } else {
+      setActors((prev) => [...prev, newActor]);
+    }
 
     setPlayerName("");
     setPlayerInitiative(0);
@@ -171,6 +185,7 @@ export default function DMInitiativeTrackerPage() {
         type: "npc",
         name: `${baseName}${suffix}`,
         initiative,
+        ac: npcAc,
         hp,
         baseName,
         index: npcMultiples ? i + 1 : undefined,
@@ -178,10 +193,23 @@ export default function DMInitiativeTrackerPage() {
       });
     }
 
-    setActors((prev) => [...prev, ...newActors]);
+    if (hasStarted) {
+      const currentId = actors[activeIndex]?.id;
+      const newList = [...actors, ...newActors].sort(
+        (a, b) => b.initiative - a.initiative,
+      );
+      setActors(newList);
+      if (currentId) {
+        const newIndex = newList.findIndex((a) => a.id === currentId);
+        if (newIndex >= 0) setActiveIndex(newIndex);
+      }
+    } else {
+      setActors((prev) => [...prev, ...newActors]);
+    }
 
     setNpcName("");
     setNpcInitiative(0);
+    setNpcAc(10);
     setNpcHp(1);
     setNpcMultiples(false);
     setNpcCount(2);
@@ -257,6 +285,32 @@ export default function DMInitiativeTrackerPage() {
     setShowEndConfirm(false);
     handleClear();
     trackEvent("dm_end_combat_confirm");
+  }
+
+  function openRemoveConfirm(actor) {
+    setRemoveConfirmActorId(actor.id);
+    trackEvent("dm_remove_actor_open_confirm");
+  }
+
+  function closeRemoveConfirm() {
+    setRemoveConfirmActorId(null);
+  }
+
+  function confirmRemoveActor() {
+    if (!removeConfirmActorId) return;
+    const actorId = removeConfirmActorId;
+    setRemoveConfirmActorId(null);
+    const removedIndex = actors.findIndex((a) => a.id === actorId);
+    setActors((prev) => prev.filter((a) => a.id !== actorId));
+    if (removedIndex < 0) return;
+    const nextLength = actors.length - 1;
+    if (nextLength <= 0) return;
+    if (removedIndex < activeIndex) {
+      setActiveIndex((prev) => Math.max(0, prev - 1));
+    } else if (removedIndex === activeIndex && activeIndex >= nextLength) {
+      setActiveIndex(0);
+    }
+    trackEvent("dm_remove_actor");
   }
 
   function handleInlineHpChange(actorId, actorName, value) {
@@ -507,6 +561,11 @@ export default function DMInitiativeTrackerPage() {
                         {actor.initiative >= 0 ? "+" : ""}
                         {actor.initiative}
                       </span>
+
+                      <span className={styles.initiativeValue}>
+                        {typeof actor.ac === "number" ? actor.ac : "—"}
+                      </span>
+
                       <button
                         type="button"
                         onClick={() => openConditionsModal(actor)}
@@ -520,6 +579,14 @@ export default function DMInitiativeTrackerPage() {
                         className={styles.chipButton}
                       >
                         Edit
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => openRemoveConfirm(actor)}
+                        className={styles.removeActorButton}
+                        aria-label={`Remove ${actor.name}`}
+                      >
+                        Remove
                       </button>
                     </div>
                   </li>
@@ -550,7 +617,17 @@ export default function DMInitiativeTrackerPage() {
               />
             </label>
             <label className={styles.formField}>
-              <span>Initiative (min {MIN_INITIATIVE})</span>
+              <span>AC</span>
+              <input
+                type="number"
+                value={playerAc}
+                onChange={(e) => setPlayerAc(e.target.value)}
+                min={0}
+                className={styles.numberInput}
+              />
+            </label>
+            <label className={styles.formField}>
+              <span>Initiative</span>
               <input
                 type="number"
                 value={playerInitiative}
@@ -586,6 +663,16 @@ export default function DMInitiativeTrackerPage() {
                 onChange={(e) => setNpcName(e.target.value)}
                 required
                 className={styles.textInput}
+              />
+            </label>
+            <label className={styles.formField}>
+              <span>AC</span>
+              <input
+                type="number"
+                value={npcAc}
+                onChange={(e) => setNpcAc(e.target.value)}
+                min={0}
+                className={styles.numberInput}
               />
             </label>
             <label className={styles.formField}>
@@ -766,6 +853,37 @@ export default function DMInitiativeTrackerPage() {
                 className={styles.primaryButtonSmall}
               >
                 End Combat
+              </button>
+            </div>
+          </div>
+        </Modal>
+      )}
+
+      {removeConfirmActorId && (
+        <Modal title="Remove character" onClose={closeRemoveConfirm}>
+          <div className={styles.form}>
+            <p className={styles.introText}>
+              Are you sure you want to remove{" "}
+              <strong>
+                {actors.find((a) => a.id === removeConfirmActorId)?.name ??
+                  "this character"}
+              </strong>{" "}
+              from the initiative order?
+            </p>
+            <div className={styles.modalActions}>
+              <button
+                type="button"
+                onClick={closeRemoveConfirm}
+                className={styles.secondaryButtonSmall}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={confirmRemoveActor}
+                className={styles.primaryButtonSmall}
+              >
+                Remove
               </button>
             </div>
           </div>

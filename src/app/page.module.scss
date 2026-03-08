@@ -286,6 +286,39 @@
   font-size: 11px;
 }
 
+.removeActorButton {
+  width: 0;
+  min-width: 0;
+  // visibility: hidden;
+  // padding: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  transition-duration: 0.5s;
+  height: 28px;
+  font-size: 11px;
+  font-weight: 500;
+  border-radius: 999px;
+  border: none;
+  background: #b91c1c;
+  color: #fff;
+  cursor: pointer;
+  flex-shrink: 0;
+  width: 0;
+
+  &:hover {
+    background: #dc2626;
+    // border-color: #dc2626;
+  }
+}
+
+.actorRow:hover .removeActorButton {
+  width: 70px;
+  min-width: 70px;
+  // visibility: visible;
+  padding: 0 10px;
+  border: 1px solid #dc2626;
+}
+
 .backLinkWrapper {
   margin-top: 24px;
 }
